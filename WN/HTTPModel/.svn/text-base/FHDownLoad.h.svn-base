@@ -1,0 +1,109 @@
+//
+//  FHDownLoad.h
+//  Education
+//
+//  Created by 王尧 on 12-10-22.
+//  Copyright (c) 2012年 UReading. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+#import <ASIHTTPRequest/ASIHTTPRequest.h>
+#import <ASIHTTPRequest/ASINetworkQueue.h>
+
+
+@interface FHDownLoad : NSObject<ASIHTTPRequestDelegate,ASIProgressDelegate>
+{
+}
+
+@property (nonatomic, assign) id delegate;
+//其他下载队列
+@property (nonatomic, retain) ASINetworkQueue *fhDownLoadQueue;
+//图书下载队列
+@property (nonatomic, retain) ASINetworkQueue *fhBookDownLoadQueue;
+
+/**   函数名称 :addDownLoadTaskWithURL
+ **   函数作用 :添加下载任务
+ **   函数参数 :fileUrl 文件下载路径 delegate协议委托对象 path 文件存放路径及名称  infoObject下载对象为空，可以不设置
+ **   函数返回值:N/A
+ **/
+- (void)addDownLoadTaskWithURL:(NSURL *)fileUrl
+               destinationPath:(NSString *)filePath
+                    infoObject:(NSObject *)object
+                      delegate:(id<ASIHTTPRequestDelegate,ASIProgressDelegate>)delegate;
+
+/**   函数名称 :addBookDownLoadTaskWithURL
+ **   函数作用 :添加下载任务
+ **   函数参数 :fileUrl 文件下载路径 delegate协议委托对象 path 文件存放路径及名称  dict存放书目相关信息
+ **   函数返回值:N/A
+ **/
+- (void)addBookDownLoadTaskWithURL:(NSURL *)fileUrl
+                   destinationPath:(NSString *)filePath
+                      downLoadPage:(NSDictionary *)dict
+                          delegate:(id<ASIHTTPRequestDelegate,ASIProgressDelegate>)delegate;
+
+
+/**   函数名称 :pauseDownloadWithRequestURL
+ **   函数作用 :暂停下载
+ **   函数参数 :requestURL 请求URL
+ **   函数返回值:N/A
+ **/
+- (void)pauseDownloadWithRequestURL:(NSURL *)requestURL;
+
+/**   函数名称 :resumeDownLoadDelegate
+ **   函数作用 :恢复下载的Delegate
+ **   函数参数 :requestURL 请求URL   object下载的对象信息
+ **   函数返回值:N/A
+ **/
+- (void)resumeDownLoadDelegate:(id)delegate requestURL:(NSString *)requestURL requestObject:(NSObject *)object;
+
+/**   函数名称 :clearDownLoadDelegate
+ **   函数作用 :取消下载对象的Delegate
+ **   函数参数 :requestURL 请求URL   object下载的对象信息
+ **   函数返回值:N/A
+ **/
+- (void)clearDownLoadDelegate:(NSString *)requestURL requestObject:(NSObject *)object;
+
+/**   函数名称 :cancelDownLoadWith
+ **   函数作用 :取消下载
+ **   函数参数 :requestURL 请求URL
+ **   函数返回值:N/A
+ **/
+- (void)cancelDownLoadWith:(NSString *)requestURL;
+
+/**   函数名称 :getDownloadStateWithArray
+ **   函数作用 :TODO:获取URL下载状态
+ **   函数参数 :urlArray URL数组
+ **   函数返回值:NSDictionary 状态字典
+ **/
+- (NSDictionary *)getDownloadStateWithArray:(NSArray *)urlArray;
+
+/**   函数名称 :pauseBookDownLoadWithURL
+ **   函数作用 :暂停图书下载
+ **   函数参数 :requestURL 请求URL
+ **   函数返回值:N/A
+ **/
+- (void)pauseBookDownLoadWithURL:(NSURL *)requestURL;
+
+/**   函数名称 :clearBookDownLoadDelegate
+ **   函数作用 :清楚图书下载回调Delegate
+ **   函数参数 :N/A
+ **   函数返回值:N/A
+ **/
+- (void)clearBookDownLoadDelegate;
+
+
+/**   函数名称 :shareInfo
+ **   函数作用 :创建 FHDownLoad 单例对象
+ **   函数参数 :
+ **   函数返回值:FHDownLoad 单例对象
+ **/
++(FHDownLoad *)shareInfo;
+
+/**   函数名称 :freeInfo
+ **   函数作用 :释放 FHDownLoad 单例对象
+ **   函数参数 :
+ **   函数返回值:
+ **/
++(void)freeInfo;
+
+@end

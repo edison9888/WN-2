@@ -1,0 +1,437 @@
+//
+//  FHDownLoad.m
+//  Education
+//
+//  Created by 王尧 on 12-10-22.
+//  Copyright (c) 2012年 UReading. All rights reserved.
+//
+
+#import "FHDownLoad.h"
+#import "NSString+MD5Addition.h"
+#import <MHTool/MHTool.h>
+
+#define DOWN_INFO @"key"
+
+#define DOWNLOAD_MAX_COUNT 30
+#define DOWNLOAD_BOOK_MAX_COUNT 1
+
+static FHDownLoad *_fhDownload = nil;
+
+@implementation FHDownLoad
+
+@synthesize fhDownLoadQueue = _fhDownLoadQueue;
+@synthesize fhBookDownLoadQueue = _fhBookDownLoadQueue;
+@synthesize delegate = _delegate;
+
+- (void)dealloc
+{
+    if (self.fhDownLoadQueue) {
+        [self.fhDownLoadQueue cancelAllOperations];
+        self.fhDownLoadQueue.delegate = nil;
+        self.fhDownLoadQueue=nil;
+    }
+    if (self.fhBookDownLoadQueue) {
+        [self.fhBookDownLoadQueue cancelAllOperations];
+        self.fhBookDownLoadQueue.delegate = nil;
+        self.fhBookDownLoadQueue=nil;
+    }
+    
+    [super dealloc];
+}
+/*
+ TODO:根据下载URL，下载存放路径，协议委托对象，生成ASIHTTPRequest
+*/
+- (ASIHTTPRequest *)createRequestObjectWithURL:(NSURL *)fileUrl destinationPath:(NSString *)filePath delegate:(id<ASIHTTPRequestDelegate,ASIProgressDelegate>)delegate{
+    self.delegate = delegate;
+    ASIHTTPRequest *request = [ASIHTTPRequest requestWithURL:fileUrl];
+    //设置ASIHTTPRequest代理
+	request.delegate = delegate;
+    [request setDownloadProgressDelegate:delegate];
+    //后台下载
+    //[request setShouldContinueWhenAppEntersBackground:YES];
+    //初始化文件下载路径
+    [request setDownloadDestinationPath:filePath];
+    //初始化临时文件路径
+    [request setTemporaryFileDownloadPath:[MHFile getCacheFilePath:[NSString stringWithFormat:@"%@.temp",[MHTool stringToMD5Value:filePath]]]];
+    //设置是是否支持断点下载
+	[request setAllowResumeForFileDownloads:YES];
+    
+    return request;
+}
+
+/*
+ TODO:验证请求文件的存放路径是否合法
+ */
+- (BOOL)validateRequestInfo:(NSString *)filePath
+{
+    //如果文件路径为空，则返回错误
+    if (!filePath || [filePath length] == 0) {
+        if (self.delegate && [self.delegate respondsToSelector:@selector(requestFailed:)]) {
+            NSError *error = [[NSError alloc] initWithDomain:@"错误" code:1 userInfo:[NSDictionary dictionaryWithObject:@"路径错误" forKey:@"文件目标存放目录不能为空"]];
+            [self.delegate requestFailed:nil];
+            [error release];
+            
+            return NO;
+        }
+    }
+    
+    if ([MHFile isExistsFile:filePath]) {
+        //如果文件已经存在，则直接返回下载成功
+        if (self.delegate && [self.delegate respondsToSelector:@selector(requestFinished:)]) {
+            [self.delegate requestFinished:nil];
+            return NO;
+        }
+    }
+    return YES;
+}
+
+#pragma mark            一般下载 （用于下载课件，板书等）
+
+/**   函数名称 :addDownLoadTaskWithURL
+ **   函数作用 :添加下载任务
+ **   函数参数 :fileUrl 文件下载路径 delegate协议委托对象 path 文件存放路径及名称  infoObject下载对象为空，可以不设置
+ **   函数返回值:N/A
+ **/
+/*
+ TODO:添加下载任务(一般下载任务)
+ */
+- (void)addDownLoadTaskWithURL:(NSURL *)fileUrl
+               destinationPath:(NSString *)filePath
+                    infoObject:(NSObject *)object
+                      delegate:(id<ASIHTTPRequestDelegate,ASIProgressDelegate>)delegate
+{
+    BOOL validateState = [self validateRequestInfo:filePath];
+    if (!validateState) {
+        return;
+    }
+    
+    BOOL isOnQueue = NO;
+    for (ASIHTTPRequest *request in [self.fhDownLoadQueue operations]) {
+        if ([[request.url absoluteString] isEqualToString:[fileUrl absoluteString]] && [request.downloadDestinationPath isEqualToString:filePath]) {
+            if (request.isExecuting) {
+                request.delegate = delegate;
+                request.downloadProgressDelegate = delegate;
+            }else if (request.isCancelled){
+                request.delegate = delegate;
+                request.downloadProgressDelegate = delegate;
+                [request startAsynchronous];
+            }
+            isOnQueue = YES;
+            break;
+        }
+    }
+    
+    if (!isOnQueue) {
+        ASIHTTPRequest *request = [self createRequestObjectWithURL:fileUrl destinationPath:filePath delegate:delegate];
+#if DEBUG
+        NSLog(@"HTTPRequest with targetString:(--%@--) has created!",filePath);
+#endif
+        //添加信息对象
+        if (object) {
+            NSMutableDictionary *userInfoDict = [NSMutableDictionary dictionary];
+            [userInfoDict setObject:object forKey:DOWN_INFO];
+            [request setUserInfo:userInfoDict];
+        }
+        [self.fhDownLoadQueue addOperation:request];
+    }
+}
+
+/**   函数名称 :addBookDownLoadTaskWithURL
+ **   函数作用 :添加下载任务
+ **   函数参数 :fileUrl 文件下载路径 delegate协议委托对象 path 文件存放路径及名称  dict存放书目相关信息
+ **   函数返回值:N/A
+ **/
+/*
+ TODO:添加下载任务(图书下载任务)
+ */
+- (void)addBookDownLoadTaskWithURL:(NSURL *)fileUrl
+                   destinationPath:(NSString *)filePath
+                      downLoadPage:(NSDictionary *)dict
+                          delegate:(id<ASIHTTPRequestDelegate,ASIProgressDelegate>)delegate
+{
+    //验证路径下载存放路径是否可用
+    BOOL validateState = [self validateRequestInfo:filePath];
+    if (!validateState) {
+        return;
+    }
+    //判断当前下载是否在队列中
+    BOOL fileIsOnQueue = NO;
+    for (ASIHTTPRequest *request in [self.fhBookDownLoadQueue operations]) {
+        if ([[request.url absoluteString] isEqualToString:[fileUrl absoluteString]] && [request.downloadDestinationPath isEqualToString:filePath]) {
+            request.delegate = delegate;
+            request.downloadProgressDelegate = delegate;
+            
+            fileIsOnQueue = YES;
+            break;
+        }
+    }
+    
+    if (!fileIsOnQueue) {
+        //生成Request对象
+        ASIHTTPRequest *request = [self createRequestObjectWithURL:fileUrl destinationPath:filePath delegate:delegate];
+        //添加信息对象
+        [request setUserInfo:dict];
+        //如果当前下载文件不在队列中，则进行将当前下载信息添加至队列中
+        [self.fhBookDownLoadQueue addOperation:request];
+    }
+}
+
+/**   函数名称 :pauseDownloadWithRequestURL
+ **   函数作用 :暂停下载
+ **   函数参数 :requestURL 请求URL
+ **   函数返回值:N/A
+ **/
+/*
+ TODO:根据下载URL信息暂停下载任务
+ */
+- (void)pauseDownloadWithRequestURL:(NSURL *)requestURL
+{
+    for (ASIHTTPRequest *request in [self.fhDownLoadQueue operations]) {
+        if ([[request.url absoluteString] isEqualToString:[requestURL absoluteString]]) {
+            [request clearDelegatesAndCancel];
+            break;
+        }
+    }
+}
+
+/**   函数名称 :resumeDownLoadDelegate
+ **   函数作用 :TODO:恢复下载的Delegate
+ **   函数参数 :requestURL 请求URL   object下载的对象信息
+ **   函数返回值:N/A
+ **/
+- (void)resumeDownLoadDelegate:(id)delegate requestURL:(NSString *)requestURL requestObject:(NSObject *)object
+{
+    if (requestURL) {
+        for (ASIHTTPRequest *request in [self.fhDownLoadQueue operations]) {
+            if ([[request.url absoluteString] isEqualToString:requestURL]) {
+                #if DEBUG 
+                    NSLog(@"request URL is %@",request.url.absoluteString);
+                #endif
+                [request setDelegate:delegate];
+                [request setDownloadProgressDelegate:delegate];
+                break;
+            }
+        }
+    }else if (object) {
+        for (ASIHTTPRequest *request in [self.fhDownLoadQueue operations]) {
+            NSDictionary *dict = request.userInfo;
+            NSObject *poco = [dict objectForKey:DOWN_INFO];
+            if (object.hash == poco.hash) {
+                [request setDelegate:delegate];
+                [request setDownloadProgressDelegate:delegate];
+                break;
+            }
+        }
+    }
+}
+
+/**   函数名称 :clearDownLoadDelegate
+ **   函数作用 :TODO:取消下载对象的Delegate
+ **   函数参数 :requestURL 请求URL   object下载的对象信息
+ **   函数返回值:N/A
+ **/
+- (void)clearDownLoadDelegate:(NSString *)requestURL requestObject:(NSObject *)object
+{
+    if (requestURL) {
+        for (ASIHTTPRequest *request in [self.fhDownLoadQueue operations]) {
+            if ([[request.url absoluteString] isEqualToString:requestURL]) {
+                #if DEBUG
+                    NSLog(@"request URL is %@",request.url.absoluteString);
+                #endif
+                request.delegate = nil;
+                request.downloadProgressDelegate = nil;
+                #if DEBUG 
+                    NSLog(@"HTTPRequest with targetString:(--%@--) has cleared!",requestURL);   
+                #endif
+                break;
+            }
+        }
+    }else if (object) {
+        for (ASIHTTPRequest *request in [self.fhDownLoadQueue operations]) {
+            NSDictionary *dict = request.userInfo;
+            NSObject *poco = [dict objectForKey:DOWN_INFO];
+            if (object.hash == poco.hash) {
+                request.delegate = nil;
+                request.downloadProgressDelegate = nil;
+                #if DEBUG 
+                    NSLog(@"HTTPRequest with targetObject:(--%@--) has cleared!",object);
+                #endif
+                break;
+            }
+        }
+    }
+}
+
+/**   函数名称 :cancelDownLoadWith
+ **   函数作用 :TODO:取消下载
+ **   函数参数 :requestURL 请求URL
+ **   函数返回值:N/A
+ **/
+- (void)cancelDownLoadWith:(NSString *)requestURL
+{
+    for (ASIHTTPRequest *request in [self.fhDownLoadQueue operations]) {
+        if ([[request.url absoluteString] isEqualToString:requestURL]) {
+            [request clearDelegatesAndCancel];
+            break;
+        }
+    }
+}
+
+/**   函数名称 :getDownloadStateWithArray
+ **   函数作用 :TODO:获取URL下载状态
+ **   函数参数 :urlArray URL数组
+ **   函数返回值:NSDictionary 状态字典
+ **/
+- (NSDictionary *)getDownloadStateWithArray:(NSArray *)urlArray
+{
+    NSMutableDictionary *downloadStateDict = [NSMutableDictionary dictionary];
+
+    for (NSString *url in urlArray) {
+        for (ASIHTTPRequest *request in [self.fhDownLoadQueue operations]) {
+            if ([[request.url absoluteString] isEqualToString:url]) {
+                if (request.delegate == nil && request.isCancelled && !request.isFinished) {
+                    //下载暂停
+                    [downloadStateDict setObject:@"pause" forKey:url];
+                }else if (request.delegate == nil && request.isExecuting){
+                    //下载正在执行
+                    [downloadStateDict setObject:@"loading" forKey:url];
+                }else if (request.delegate == nil && request.isFinished){
+                    //下载已经完成
+                    [downloadStateDict setObject:@"finished" forKey:url];
+                }
+                break;
+            }
+        }
+    }
+    
+    return downloadStateDict;
+}
+
+
+#pragma mark            书籍下载
+
+/**   函数名称 :pauseBookDownLoadWithURL
+ **   函数作用 :暂停图书下载
+ **   函数参数 :requestURL 请求URL
+ **   函数返回值:N/A
+ **/
+/*
+ TODO:根据URL暂停图书下载
+ */
+- (void)pauseBookDownLoadWithURL:(NSURL *)requestURL
+{
+    for (ASIHTTPRequest *request in [self.fhBookDownLoadQueue operations]) {
+        if ([[request.url absoluteString] isEqualToString:[requestURL absoluteString]]) {
+            [request clearDelegatesAndCancel];
+            break;
+        }
+    }
+}
+
+/**   函数名称 :clearBookDownLoadDelegate
+ **   函数作用 :清楚图书下载回调Delegate
+ **   函数参数 :N/A
+ **   函数返回值:N/A
+ **/
+/*
+ TODO:清楚下载信息的Delegate(当界面退出时，需要清楚界面的委托回调，否则会造成crash)
+ */
+- (void)clearBookDownLoadDelegate
+{
+    for (ASIHTTPRequest *request in [self.fhBookDownLoadQueue operations]) {
+        [request clearDelegatesAndCancel];
+    }
+}
+
+/**   函数名称 :operationSuccessAction
+ **   函数作用 :TODO:队列检测到某个Request成功
+ **   函数参数 :request 成功的request请求对象
+ **   函数返回值:N/A
+ **/
+- (void)operationSuccessAction:(ASIHTTPRequest *)request
+{
+//    NSDictionary *dict = request.userInfo;
+//    NSObject *poco = [dict objectForKey:DOWN_INFO];
+    #if DEBUG
+        NSLog(@"成功");
+    #endif
+}
+
+/**   函数名称 :operationFailedAction
+ **   函数作用 :TODO:
+ **   函数参数 :request 成功的request请求对象
+ **   函数返回值:N/A
+ **/
+- (void)operationFailedAction:(ASIHTTPRequest *)request
+{
+    #if DEBUG
+        NSLog(@"出错.........");
+    #endif
+    
+//    NSDictionary *dict = request.userInfo;
+//    NSObject *poco = [dict objectForKey:DOWN_INFO];
+    
+}
+
+/**   函数名称 :initQueue
+ **   函数作用 :初始化下载队列
+ **   函数参数 :N/A
+ **   函数返回值:N/A
+ **/
+- (void)initQueue
+{
+    self.fhDownLoadQueue = [[[ASINetworkQueue alloc] init] autorelease];
+    self.fhDownLoadQueue.delegate = self;
+    [self.fhDownLoadQueue setShowAccurateProgress:YES];
+    /*
+        !!!:当ASI中的某个request失败时，默认会取消所有的request， 这里设置成NO  至为不取消
+     */
+    [self.fhDownLoadQueue setShouldCancelAllRequestsOnFailure:NO];
+    self.fhDownLoadQueue.requestDidFailSelector = @selector(operationFailedAction:);
+    self.fhDownLoadQueue.requestDidFinishSelector = @selector(operationSuccessAction:);
+    [self.fhDownLoadQueue setMaxConcurrentOperationCount:DOWNLOAD_MAX_COUNT];
+    [self.fhDownLoadQueue go];
+    
+    self.fhBookDownLoadQueue = [[[ASINetworkQueue alloc] init] autorelease];
+    [self.fhBookDownLoadQueue setShowAccurateProgress:YES];
+    [self.fhBookDownLoadQueue setMaxConcurrentOperationCount:DOWNLOAD_BOOK_MAX_COUNT];
+    [self.fhBookDownLoadQueue reset];
+    [self.fhBookDownLoadQueue go];
+}
+
+- (id)init
+{
+    self = [super init];
+    if (self) {
+        [self initQueue];
+    }
+    return self;
+}
+
+/**   函数名称 :shareInfo
+ **   函数作用 :创建 FHDownLoad 单例对象
+ **   函数参数 :
+ **   函数返回值:FHDownLoad 单例对象
+ **/
++(FHDownLoad *)shareInfo{
+    @synchronized(self){
+        if (!_fhDownload) {
+            _fhDownload = [[self alloc] init];
+        }
+    }
+    return _fhDownload;
+}
+
+/**   函数名称 :freeInfo
+ **   函数作用 :释放 FHDownLoad 单例对象
+ **   函数参数 :
+ **   函数返回值:
+ **/
++(void)freeInfo{
+    if (_fhDownload) {
+        [_fhDownload release];
+        _fhDownload=nil;
+    }
+}
+
+@end

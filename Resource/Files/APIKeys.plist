@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>WeixinAppID</key>
+	<string>wx059530e44401a4b8</string>
+	<key>SinaWeiBoAppKey</key>
+	<string>3460893125</string>
+	<key>SinaWeiBoAppSecret</key>
+	<string>d205fff62d75fa522d326ae415b5f828</string>
+	<key>SinaWeiBoAppRedirectUrl</key>
+	<string>http://www.sina.com</string>
+	<key>TCWeiBoAppKey</key>
+	<string>801299387</string>
+	<key>TCWeiBoAppSecret</key>
+	<string>0030b263480c906fd0b09f22ad064587</string>
+	<key>TCWeiBoAppRedirectUrl</key>
+	<string>http://www.tencent.com/zh-cn/index.shtml</string>
+	<key>RenrenAppKey</key>
+	<string>14d0486c4a9a4418bc9ccce73b3fe361</string>
+	<key>RenrenAppID</key>
+	<string>223968</string>
+</dict>
+</plist>

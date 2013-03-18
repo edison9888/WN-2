@@ -1,0 +1,53 @@
+//
+//  DJ_Http.h
+//  Deji_Plaza
+//
+//  Created by 王尧 on 12-12-29.
+//  Copyright (c) 2012年 王尧. All rights reserved.
+//
+
+#ifndef Deji_Plaza_DJ_Http_h
+#define Deji_Plaza_DJ_Http_h
+
+//广告接口
+#define INDEX_AD_REQCODE      @"DJ_00001"
+//资讯一级目录列表信息请求码
+#define INFO_MODE_REQCODE     @"DJ_00002"
+//资讯二级目录列表信息请求码
+#define INFO_SUB_MODE_REQCODE @"DJ_00003"
+//商品类别目录
+#define INFO_GOODS_CATA_REQCODE @"DJ_00004"
+//停车场公告获取
+#define INFO_PARKING_REQCODE @"DJ_00005"
+// 更多关于德基获取
+#define MORE_ABOUT_REQCODE @"DJ_00006"
+//获取楼层地图
+#define MALLMAP_GET_REQCODE @"DJ_00007"
+//获取店铺详情
+#define STOREINFO_GET_REQCODE @"DJ_00008"
+
+
+//数据节点Key
+#define REQCODE_KEY     @"reqcode"
+#define DATA_STATUS_KEY @"status"
+#define DATA_KEY        @"data"
+
+
+//首页广告加载
+#define INDEX_AD_URL       @"http://deji.ureading.com/ios1.0.php?a=getAdvertisement&reqcode=%@"
+//资讯模块请求URL
+#define INFO_MODEL_URL      @"http://deji.ureading.com/ios1.0.php?a=getCommercial&reqcode=%@"
+//资讯二级分类请求URL
+#define INFO_SUB_MODEL_URL  @"http://deji.ureading.com/ios1.0.php?a=getTypeList&reqcode=%@&id=%d"
+//商场分类列表请求URL
+#define INFO_GOODS_CATA_URL @"http://deji.ureading.com/ios1.0.php?a=getBrand&reqcode=%@&type=2"
+//停车场公告获取
+#define INFO_PARKING_URL    @"http://deji.ureading.com/ios1.0.php?a=getMessages&reqcode=DJ_00005"
+// 更多关于德基
+#define MORE_ABOUT_URL      @"http://deji.ureading.com/ios1.0.php?a=aboutDj&reqcode=DJ_00006"
+//获取楼层地图
+#define MALLMAP_GET_URL     @"http://deji.ureading.com/ios1.0.php?a=shopMap&reqcode=DJ_00007"
+//获取店铺详情
+#define STOREINFO_GET_URL     @"http://deji.ureading.com/ios1.0.php?a=getShopInfo&id=%d&reqcode=%@"
+
+#endif

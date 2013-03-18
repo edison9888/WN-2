@@ -1,0 +1,477 @@
+//
+//  DJ_ParserEngine.m
+//  Deji_Plaza
+//
+//  Created by 王 尧 on 12-12-28.
+//  Copyright (c) 2012年 王尧. All rights reserved.
+//
+
+#import "DJ_ParserEngine.h"
+#import "DJ_Http.h"
+#import "InfomationNode.h"
+#import "CommercialNode.h"
+#import "CommercialDetailNode.h"
+#import "AdImageNode.h"
+#import "GoodsCatagoryNode.h"
+#import "GoodsDetailNode.h"
+#import "AdImageNode.h"
+
+@implementation DJ_ParserEngine
+
+static DJ_ParserEngine *_sharedInstance = nil;
+
+#pragma mark- =================================Singleton Constructor=======================================
+/**   函数名称 :shareInstance:
+ **   函数作用 :TODO:获取数据解析单例
+ **   函数参数 :N/A
+ **   函数返回值:DJ_ParserEngine 单例对象
+ **/
++ (DJ_ParserEngine *)shareInstance
+{
+    if (_sharedInstance == nil)
+    {
+        _sharedInstance = [NSAllocateObject([self class], 0, NULL) init];
+    }
+    return _sharedInstance;
+}
+
++ (id) allocWithZone:(NSZone *)zone
+{
+    return [[self shareInstance] retain];
+}
+
+- (id) copyWithZone:(NSZone*)zone
+{
+    return self;
+}
+
+- (id) retain
+{
+    return self;
+}
+
+- (NSUInteger) retainCount
+{
+    return NSUIntegerMax;
+}
+
+- (oneway void) release
+{
+    
+}
+
+- (id) autorelease
+{
+    return self;
+}
+
+#pragma mark- =======================================Function declaration==========================================
+
+/**   函数名称 :parserIndexAdInfoWithDict:
+ **   函数作用 :TODO:解析首页广告节点
+ **   函数参数 :dict 数据字典 array 返回的数据数组
+ **   函数返回值:N/A
+ **/
+- (void)parserIndexAdInfoWithDict:(NSDictionary *)dict outArray:(NSMutableArray **)outArray
+{
+    if (!dict) return;
+    NSArray *adInfoArray = [dict objectForKey:DATA_KEY];
+    for (NSDictionary *dict in adInfoArray) {
+        NSString *adId = [dict objectForKey:@"id"];
+        NSString *ue_advertisement_explain = [dict objectForKey:@"ue_advertisement_explain"];
+        NSString *thumb_img = [dict objectForKey:@"thumb_img"];
+        NSString *advert_img = [dict objectForKey:@"advert_img"];
+        
+        AdImageNode *adImageNode = [[AdImageNode alloc] init];
+        adImageNode.adImageId = [adId integerValue];
+        adImageNode.ue_advertisement_explain = ue_advertisement_explain;
+        adImageNode.thumb_img = thumb_img;
+        adImageNode.advert_img = advert_img;
+        
+        [*outArray addObject:adImageNode];
+        
+        [adImageNode release];
+    }
+}
+
+/**   函数名称 :parserAdImageNode
+ **   函数作用 :TODO:将广告数据封装为字典
+ **   函数参数 :
+ **   函数返回值:
+ **/
+- (void)parserAdImageNode:(AdImageNode *)node toDict:(NSMutableDictionary **)outDict
+{
+    NSString *adImageId = [NSString stringWithFormat:@"%d", node.adImageId];
+    NSString *ue_advertisement_explain = node.ue_advertisement_explain;
+    NSString *thumb_img = node.thumb_img;
+    NSString *advert_img = node.advert_img;
+    
+    [*outDict setObject:adImageId forKey:@"id"];
+    [*outDict setObject:ue_advertisement_explain forKey:@"ue_advertisement_explain"];
+    [*outDict setObject:thumb_img forKey:@"thumb_img"];
+    [*outDict setObject:advert_img forKey:@"advert_img"];
+}
+
+/**   函数名称 :parserInfomationNodeDict:
+ **   函数作用 :TODO:解析信息节点
+ **   函数参数 :dict 数据字典 outArray 返回的数据数组
+ **   函数返回值:N/A
+ **/
+- (void)parserInfomationNodeDict:(NSDictionary *)infoDict outArray:(NSMutableArray **)outArray
+{
+    InfomationNode *infomationNode = [[[InfomationNode alloc] init] autorelease];
+    
+    NSString *infoId   = [infoDict objectForKey:@"id"];
+    NSString *infoName = [infoDict objectForKey:@"name"];
+    NSString *infoType = [infoDict objectForKey:@"type"];
+    infomationNode.infomationId = [infoId intValue];
+    infomationNode.infomationName = infoName;
+    infomationNode.infomationType = [infoType intValue];
+    
+    NSArray *commericalArray = [infoDict objectForKey:@"CommercialInfo"];
+    for (NSDictionary *commericalDict in commericalArray) {
+        CommercialNode *commerNode = [[CommercialNode alloc] init];
+        
+        NSString *commerId             = [commericalDict objectForKey:@"id"];
+        NSString *commercial_explain   = [commericalDict objectForKey:@"commercial_explain"];
+        NSString *commercial_thumb_img = [commericalDict objectForKey:@"commercial_thumb_img"];
+        
+        commerNode.commercialId = [commerId intValue];
+        commerNode.commercial_explain = commercial_explain;
+        commerNode.commercial_thumb_img = commercial_thumb_img;
+        commerNode.f_infoId   = infomationNode.infomationId;
+        commerNode.f_infoType = infomationNode.infomationType;
+        
+        //解析详情
+        NSDictionary *commerDetailDict = [commericalDict objectForKey:@"CommerDetail"];
+        if (commerDetailDict && [commericalDict isKindOfClass:[NSMutableDictionary class]]) {
+            CommercialDetailNode *detailNode = [[CommercialDetailNode alloc] init];
+            
+            NSString *commerDetaiId        = [commerDetailDict objectForKey:@"id"];
+            NSString *commercial_type_name = [commerDetailDict objectForKey:@"commercial_type_name"];
+            NSString *title                = [commerDetailDict objectForKey:@"title"];
+            NSString *content              = [commerDetailDict objectForKey:@"content"];
+            content = [content stringByReplacingOccurrencesOfString:@"%5Cr%5Cn" withString:@""];
+            
+            detailNode.detailId = [commerDetaiId intValue];
+            detailNode.commercialTypeName = commercial_type_name;
+            detailNode.detailTitle = title;
+            detailNode.detailContent = content;
+            
+            NSArray *array = [commerDetailDict objectForKey:@"img"];
+            for (NSString *imgUrl in array) {
+                [detailNode.imageUrlArray addObject:imgUrl];
+            }
+            
+            commerNode.detailNode = detailNode;
+            [detailNode release];
+        }
+        
+        [infomationNode.commericalArray addObject:commerNode];
+        [commerNode release];
+    }
+    [*outArray addObject:infomationNode];
+}
+
+/**   函数名称 :parserInfomationWithDict:
+ **   函数作用 :TODO:解析资讯节点
+ **   函数参数 :dict 数据字典 outArray 返回的数据数组
+ **   函数返回值:N/A
+ **/
+- (void)parserInfomationWithDict:(NSDictionary *)dict outArray:(NSMutableArray **)outArray
+{
+    if (!dict) return;
+    NSArray *infoArray = [dict objectForKey:DATA_KEY];
+    
+    for (NSDictionary *infoDict in infoArray) {
+        [self parserInfomationNodeDict:infoDict outArray:outArray];
+    }
+}
+
+/**   函数名称 :parserInfomationArrayToDict
+ **   函数作用 :TODO:将资讯数据封装为字典
+ **   函数参数 :
+ **   函数返回值:
+ **/
+- (void)parserInfomationArray:(InfomationNode *)node toDict:(NSMutableDictionary **)outDict
+{
+    NSString *informationID = [NSString stringWithFormat:@"%d",node.infomationId];
+    NSString *informationType = [NSString stringWithFormat:@"%d",node.infomationType];
+    NSString *informationName = node.infomationName;
+    NSString *scrollPage = [NSString stringWithFormat:@"%d",node.scrollPage];
+    
+    NSMutableArray *array = [[NSMutableArray alloc] init];
+    for (CommercialNode *commercialNode in node.commericalArray) {
+        NSMutableDictionary *commercialDict = [[NSMutableDictionary alloc] init];
+        NSString *commercialId = [NSString stringWithFormat:@"%d",commercialNode.commercialId];
+        NSString *commercial_explain = commercialNode.commercial_explain;
+        NSString *commercial_thumb_img = commercialNode.commercial_thumb_img;
+        
+        if (commercialNode.detailNode) {
+            NSMutableDictionary *detailDict = [[NSMutableDictionary alloc] init];
+            NSString *detailId = [NSString stringWithFormat:@"%d",commercialNode.detailNode.detailId];
+            NSString *commercialTypeName = commercialNode.detailNode.commercialTypeName;
+            NSArray *imageArray = [NSArray arrayWithArray:commercialNode.detailNode.imageUrlArray];
+            NSString *detailTitle = commercialNode.detailNode.detailTitle;
+            NSString *detailContent = commercialNode.detailNode.detailContent;
+            [detailDict setObject:detailId forKey:@"id"];
+            [detailDict setObject:commercialTypeName forKey:@"commercial_type_name"];
+            [detailDict setObject:imageArray forKey:@"img"];
+            [detailDict setObject:detailTitle forKey:@"title"];
+            [detailDict setObject:detailContent forKey:@"content"];
+            
+            [commercialDict setObject:detailDict forKey:@"CommerDetail"];
+            
+            [detailDict release];
+        }
+        [commercialDict setObject:commercialId forKey:@"id"];
+        [commercialDict setObject:commercial_explain forKey:@"commercial_explain"];
+        [commercialDict setObject:commercial_thumb_img forKey:@"commercial_thumb_img"];
+        [array addObject:commercialDict];
+        [commercialDict release];
+    }
+    [*outDict setObject:informationID forKey:@"id"];
+    [*outDict setObject:informationType forKey:@"type"];
+    [*outDict setObject:informationName forKey:@"name"];
+    [*outDict setObject:array forKey:@"CommercialInfo"];
+    [*outDict setObject:scrollPage forKey:@"scrollPage"];
+    [array release];
+}
+
+/**   函数名称 :parserInfoSubListWithDict:
+ **   函数作用 :TODO:解析二级子分类
+ **   函数参数 :dict 数据字典 outArray 返回的数据数组
+ **   函数返回值:N/A
+ **/
+- (void)parserInfoSubListWithDict:(NSDictionary *)dict outArray:(NSMutableArray **)outArray
+{
+    if (!dict) return;
+    NSDictionary *infoDict = [dict objectForKey:DATA_KEY];
+    if (!infoDict && ![infoDict isKindOfClass:[NSDictionary class]]) return;
+    //解析
+    [self parserInfomationNodeDict:infoDict outArray:outArray];
+}
+
+/**   函数名称 :parserGoodsCatagoryWith:
+ **   函数作用 :TODO:解析商品分类目录
+ **   函数参数 :dict 数据字典 outDict 返回的字典
+ **   函数返回值:N/A
+ **/
+- (void)parserGoodsCatagoryWith:(NSDictionary *)dict outDict:(NSMutableDictionary **)outDict
+{
+    if (!dict) return;
+    NSDictionary *infoDict = [dict objectForKey:DATA_KEY];
+    if (!infoDict && ![infoDict isKindOfClass:[NSDictionary class]]) return;
+    
+    NSMutableArray *allArray = [[NSMutableArray alloc] init];
+    NSMutableDictionary *allDict = [NSMutableDictionary dictionary];
+    
+    for (NSString *keyStr in [infoDict allKeys]) {
+        NSArray *cataRecordArray = [infoDict objectForKey:keyStr];
+        
+        NSMutableArray *resultArray = [[NSMutableArray alloc] init];
+        
+        for (NSDictionary *cataDict in cataRecordArray) {
+            GoodsCatagoryNode *cataNode = [[GoodsCatagoryNode alloc] init];
+            
+            NSString *cataIndex = [cataDict objectForKey:@"id"];
+            NSString *brand_img = [cataDict objectForKey:@"brand_img"];
+            NSString *brand_name = [cataDict objectForKey:@"brand_name"];
+            NSString *brand_name_en = [cataDict objectForKey:@"shop_name_en"];
+            NSString *floor = [cataDict objectForKey:@"floor"];
+            NSString *dj_item = [cataDict objectForKey:@"dj_term"];
+            cataNode.index = [cataIndex intValue];
+            cataNode.letterIndex = keyStr;
+            cataNode.brandImage = brand_img;
+            cataNode.brand_name = brand_name;
+            cataNode.brand_name_en = brand_name_en;
+            cataNode.floor = floor;
+            cataNode.dj_term = [dj_item intValue];
+            
+            //解析详情节点
+            NSDictionary *detaiDict = [cataDict objectForKey:@"CommerDetail"];
+            if (detaiDict && [detaiDict isKindOfClass:[NSDictionary class]]) {
+                NSString *detailIndex = [detaiDict objectForKey:@"id"];
+                NSString *detailTitle = [detaiDict objectForKey:@"title"];
+                NSString *detailContent = [detaiDict objectForKey:@"content"];
+                NSString *detailStorey = [detaiDict objectForKey:@"storey"];
+                NSArray *imageArray = [detaiDict objectForKey:@"img"];
+                
+                GoodsDetailNode *detailNode = [[GoodsDetailNode alloc] init];
+                detailNode.index = [detailIndex intValue];
+                detailNode.detailTitle = detailTitle;
+                detailNode.detailContent = detailContent;
+                detailNode.storey = detailStorey;
+                detailNode.detaiImageArray = [NSMutableArray arrayWithArray:imageArray];
+                
+                cataNode.goodsDetailNode = detailNode;
+                
+                [detailNode release];
+            }
+            //!!!!:此处使用名称去重复
+            if (![allDict objectForKey:brand_name] && ![[allDict objectForKey:brand_name] isEqualToString:@"1"]) {
+                //将其添加至全部分类
+                [allArray addObject:cataNode];
+            }
+            //添加至某一个索引分类
+            [resultArray addObject:cataNode];
+            [allDict setObject:@"1" forKey:brand_name];
+            [cataNode release];
+        }
+        [*outDict setObject:resultArray forKey:keyStr];
+        [resultArray release];
+    }
+    [*outDict setObject:allArray forKey:@"0"];
+    [allArray release];
+}
+
+/**   函数名称 :parserDetailNode:toDict:
+ **   函数作用 :TODO:从文章详情中解析数据至字典中
+ **   函数参数 :detailNode 详情节点 outDict 返回的字典
+ **   函数返回值:N/A
+ **/
+- (void)parserDetailNode:(CommercialDetailNode *)detailNode toDict:(NSMutableDictionary **)outDict
+{
+    NSString *detailId = [NSString stringWithFormat:@"%d",detailNode.detailId];
+    NSString *commercialTypeName = detailNode.commercialTypeName;
+    NSString *detailTitle = detailNode.detailTitle;
+    NSString *detailContent = detailNode.detailContent;
+    
+    [*outDict setObject:detailId forKey:@"detailId"];
+    if (detailNode.commercialTypeName) {
+        [*outDict setObject:commercialTypeName forKey:@"commercialTypeName"];
+    }
+    if (detailNode.detailTitle) {
+        [*outDict setObject:detailTitle forKey:@"detailTitle"];
+    }
+    [*outDict setObject:detailContent forKey:@"detailContent"];
+    [*outDict setObject:detailNode.imageUrlArray forKey:@"imageUrlArray"];
+    
+}
+
+/**   函数名称 :parserMoreViewDetailNode:toDict:
+ **   函数作用 :TODO:从关于德基中解析数据至字典中 服务器数据用了两套键
+ **   函数参数 :detailNode 详情节点 outDict 返回的字典
+ **   函数返回值:N/A
+ **/
+- (void)parserMoreViewDetailNode:(CommercialDetailNode *)detailNode toDict:(NSMutableDictionary **)outDict
+{
+    NSString *detailId = [NSString stringWithFormat:@"%d",detailNode.detailId];
+    NSString *detailContent = detailNode.detailContent;
+    
+    [*outDict setObject:detailId forKey:@"detailId"];
+    [*outDict setObject:detailContent forKey:@"content"];
+    [*outDict setObject:detailNode.imageUrlArray forKey:@"img"];
+    
+}
+/**   函数名称 :parserDetailDict:toDetailNode:
+ **   函数作用 :TODO:从字典详情中解析出详情节点
+ **   函数参数 :dict 返回的字典  detailNode 详情节点
+ **   函数返回值:N/A
+ **/
+- (void)parserDetailDict:(NSMutableDictionary *)dict toDetailNode:(CommercialDetailNode **)detailNode
+{
+    NSString *detailId = [dict objectForKey:@"detailId"];
+    NSString *commercialTypeName = [dict objectForKey:@"commercialTypeName"];
+    NSString *detailTitle = [dict objectForKey:@"detailTitle"];
+    NSString *detailContent = [dict objectForKey:@"detailContent"];
+    detailContent = [detailContent stringByReplacingOccurrencesOfString:@"%5Cr%5Cn" withString:@""];
+    NSArray *array = [dict objectForKey:@"imageUrlArray"];
+    
+    [*detailNode setDetailId:[detailId intValue]];
+    [*detailNode setCommercialTypeName:commercialTypeName];
+    [*detailNode setDetailTitle:detailTitle];
+    [*detailNode setDetailContent:detailContent];
+    [*detailNode setImageUrlArray:[NSMutableArray arrayWithArray:array]];
+}
+/**   函数名称 :parserDetailDict:toDetailNode:
+ **   函数作用 :TODO:从字典详情中解析出详情节点
+ **   函数参数 :dict 返回的字典  detailNode 详情节点
+ **   函数返回值:N/A
+ **/
+- (void)parserDetailDict:(NSDictionary *)dict toParkingNoticeNode:(ParkingNoticeNode **)parkingNoticeNode
+{
+    NSDictionary *data = [dict objectForKey:@"data"];
+    NSString *jianJie = [data objectForKey:@"content1"];
+    NSString *gongGao = [data objectForKey:@"content2"];
+//    NSString *vipZunXiang = [data objectForKey:@"content3"];
+    
+    [*parkingNoticeNode setJianJie:jianJie];
+    [*parkingNoticeNode setGongGao:gongGao];
+//    [*parkingNoticeNode setVipZunXiang:vipZunXiang];
+}
+
+/**   函数名称 :parserDetailDict:toDetailNode:
+ **   函数作用 :TODO:从字典详情中解析出详情节点
+ **   函数参数 :dict 返回的字典  detailNode 详情节点
+ **   函数返回值:N/A
+ **/
+- (void)parserDetailDict:(NSDictionary *)dict toCommercialDetailNode:(CommercialDetailNode **)commercialDetailNode
+{
+    NSDictionary *data = [dict objectForKey:@"data"];
+    NSString *jianJie = [data objectForKey:@"content"];
+    NSArray *imageURLArray = [data objectForKey:@"img"];
+    
+    [*commercialDetailNode setDetailContent:jianJie];
+    [*commercialDetailNode setImageUrlArray:[NSMutableArray arrayWithArray:imageURLArray]];
+}
+
+/**   函数名称 :parserDetailDict:toMallMapNode:
+ **   函数作用 :TODO:从字典详情中解析出地图信息节点
+ **   函数参数 :dict 返回的字典  MallMapNode 地图信息节点
+ **   函数返回值:N/A
+ **/
+- (void)parserDetailDict:(NSDictionary *)dict toMallMapNode:(MallMapNode **)mallMapNode
+{
+    MallMapNode *mapNode = *mallMapNode;
+    NSDictionary *data = [dict objectForKey:@"data"];
+    if (![data isKindOfClass:[NSDictionary class]]) {
+        NSLog(@"!!!!!!!!!!!!地图信息节点响应为空!!!!!!!!!");
+        return;
+    }
+    //一期
+    NSArray *yiqi = [data objectForKey:@"one"];
+    for (int i = 0; i < yiqi.count; i++) {
+        NSDictionary *floorInfo = [yiqi objectAtIndex:i];
+        DJMapInfoNode *floorInfoNode = [[DJMapInfoNode alloc] init];
+        floorInfoNode.fileUrl = [floorInfo objectForKey:@"filename"];
+        floorInfoNode.floor = [floorInfo objectForKey:@"floor"];
+        floorInfoNode.timeStamp = [floorInfo objectForKey:@"time"];
+        floorInfoNode.flag = 1;
+        [mapNode.DJ_yiqi addObject:floorInfoNode];
+        [floorInfoNode release];
+    }
+    
+    //二期
+    NSArray *erqi = [data objectForKey:@"two"];
+    for (int i = 0; i < erqi.count; i++) {
+        NSDictionary *floorInfo = [erqi objectAtIndex:i];
+        DJMapInfoNode *floorInfoNode = [[DJMapInfoNode alloc] init];
+        floorInfoNode.fileUrl = [floorInfo objectForKey:@"filename"];
+        floorInfoNode.floor = [floorInfo objectForKey:@"floor"];
+        floorInfoNode.timeStamp = [floorInfo objectForKey:@"time"];
+        floorInfoNode.flag = 2;
+        [mapNode.DJ_erqi addObject:floorInfoNode];
+        [floorInfoNode release];
+    }
+}
+
+/**   函数名称 :parserDetailDict:toGoodsDetailNode:
+ **   函数作用 :TODO:从字典详情中解析出店铺详情信息节点
+ **   函数参数 :dict 返回的字典  GoodsDetailNode 店铺详情节点
+ **   函数返回值:N/A
+ **/
+- (void)parserDetailDict:(NSDictionary *)dict toGoodsDetailNode:(GoodsDetailNode **)goodDetailNode
+{
+    NSDictionary *data = [dict objectForKey:@"data"];
+    NSString *detailTitle = [data objectForKey:@"title"];
+    NSArray *detaiImageArray = [data objectForKey:@"img"];
+    NSString *detailContent = [data objectForKey:@"content"];
+    NSString *storey = [data objectForKey:@"storey"];
+    
+    [(*goodDetailNode) setDetailTitle:detailTitle];
+    [(*goodDetailNode) setDetailContent:detailContent];
+    [(*goodDetailNode) setDetaiImageArray:[NSMutableArray arrayWithArray:detaiImageArray]];
+    [(*goodDetailNode) setStorey:storey];
+}
+@end

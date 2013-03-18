@@ -1,0 +1,111 @@
+//
+//  DJ_ParserEngine.h
+//  Deji_Plaza
+//
+//  Created by 王 尧 on 12-12-28.
+//  Copyright (c) 2012年 王尧. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+#import "ParkingNoticeNode.h"
+#import "CommercialDetailNode.h"
+#import "MallMapNode.h"
+#import "GoodsDetailNode.h"
+
+@class CommercialDetailNode;
+@class InfomationNode;
+@class AdImageNode;
+
+/*
+ 数据解析
+ */
+@interface DJ_ParserEngine : NSObject
+
+/**   函数名称 :shareInstance:
+ **   函数作用 :TODO:获取数据解析单例
+ **   函数参数 :N/A
+ **   函数返回值:DJ_ParserEngine 单例对象
+ **/
++ (DJ_ParserEngine *)shareInstance;
+
+/**   函数名称 :parserIndexAdInfoWithDict:
+ **   函数作用 :TODO:解析首页广告节点
+ **   函数参数 :dict 数据字典 array 返回的数据数组
+ **   函数返回值:N/A
+ **/
+- (void)parserIndexAdInfoWithDict:(NSDictionary *)dict outArray:(NSMutableArray **)outArray;
+/**   函数名称 :parserAdImageNode
+ **   函数作用 :TODO:将广告数据封装为字典
+ **   函数参数 :
+ **   函数返回值:
+ **/
+- (void)parserAdImageNode:(AdImageNode *)node toDict:(NSMutableDictionary **)outDict;
+/**   函数名称 :parserInfomationWithDict:
+ **   函数作用 :TODO:解析资讯节点
+ **   函数参数 :dict 数据字典 array 返回的数据数组
+ **   函数返回值:N/A
+ **/
+- (void)parserInfomationWithDict:(NSDictionary *)dict outArray:(NSMutableArray **)outArray;
+/**   函数名称 :parserInfomationArrayToDict
+ **   函数作用 :TODO:将资讯数据封装为字典
+ **   函数参数 :
+ **   函数返回值:
+ **/
+- (void)parserInfomationArray:(InfomationNode *)node toDict:(NSMutableDictionary **)outDict;
+/**   函数名称 :parserInfoSubListWithDict:
+ **   函数作用 :TODO:解析二级子分类
+ **   函数参数 :dict 数据字典 outArray 返回的数据数组
+ **   函数返回值:N/A
+ **/
+- (void)parserInfoSubListWithDict:(NSDictionary *)dict outArray:(NSMutableArray **)outArray;
+/**   函数名称 :parserGoodsCatagoryWith:
+ **   函数作用 :TODO:解析商品分类目录
+ **   函数参数 :dict 数据字典 outDict 返回的字典
+ **   函数返回值:N/A
+ **/
+- (void)parserGoodsCatagoryWith:(NSDictionary *)dict outDict:(NSMutableDictionary **)outDict;
+
+/**   函数名称 :parserDetailNode:
+ **   函数作用 :TODO:从文章详情中解析数据至字典中
+ **   函数参数 :detailNode 详情节点 outDict 返回的字典
+ **   函数返回值:N/A
+ **/
+- (void)parserDetailNode:(CommercialDetailNode *)detailNode toDict:(NSMutableDictionary **)outDict;
+/**   函数名称 :parserMoreViewDetailNode:toDict:
+ **   函数作用 :TODO:从关于德基中解析数据至字典中 服务器数据用了两套键
+ **   函数参数 :detailNode 详情节点 outDict 返回的字典
+ **   函数返回值:N/A
+ **/
+- (void)parserMoreViewDetailNode:(CommercialDetailNode *)detailNode toDict:(NSMutableDictionary **)outDict;
+/**   函数名称 :parserDetailDict:toDetailNode:
+ **   函数作用 :TODO:从字典详情中解析出详情节点
+ **   函数参数 :dict 返回的字典  detailNode 详情节点
+ **   函数返回值:N/A
+ **/
+- (void)parserDetailDict:(NSMutableDictionary *)dict toDetailNode:(CommercialDetailNode **)detailNode;
+/**   函数名称 :parserDetailDict:toParkingNoticeNode:
+ **   函数作用 :TODO:从字典详情中解析出停车场公告节点
+ **   函数参数 :dict 返回的字典  ParkingNoticeNode 停车场公告节点
+ **   函数返回值:N/A
+ **/
+- (void)parserDetailDict:(NSDictionary *)dict toParkingNoticeNode:(ParkingNoticeNode **)parkingNoticeNode;
+/**   函数名称 :parserDetailDict:toDetailNode:
+ **   函数作用 :TODO:从字典详情中解析出详情节点
+ **   函数参数 :dict 返回的字典  commercialDetailNode 详情节点
+ **   函数返回值:N/A
+ **/
+- (void)parserDetailDict:(NSDictionary *)dict toCommercialDetailNode:(CommercialDetailNode **)commercialDetailNode;
+/**   函数名称 :parserDetailDict:toMallMapNode:
+ **   函数作用 :TODO:从字典详情中解析出地图信息节点
+ **   函数参数 :dict 返回的字典  MallMapNode 地图信息节点
+ **   函数返回值:N/A
+ **/
+- (void)parserDetailDict:(NSDictionary *)dict toMallMapNode:(MallMapNode **)mallMapNode;
+/**   函数名称 :parserDetailDict:toGoodsDetailNode:
+ **   函数作用 :TODO:从字典详情中解析出店铺详情信息节点
+ **   函数参数 :dict 返回的字典  GoodsDetailNode 店铺详情节点
+ **   函数返回值:N/A
+ **/
+- (void)parserDetailDict:(NSDictionary *)dict toGoodsDetailNode:(GoodsDetailNode **)goodDetailNode;
+
+@end

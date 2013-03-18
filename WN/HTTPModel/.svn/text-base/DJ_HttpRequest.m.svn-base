@@ -1,0 +1,328 @@
+//
+//  DJ_HttpRequest.m
+//  Deji_Plaza
+//
+//  Created by 王尧 on 12-12-28.
+//  Copyright (c) 2012年 王尧. All rights reserved.
+//
+
+#import "DJ_HttpRequest.h"
+#import "DJ_Http.h"
+#import "DJ_ParserEngine.h"
+
+@implementation DJ_HttpRequest
+
+- (void)dealloc
+{
+    if (_httpRequest) {
+        [_httpRequest cancel];
+        _httpRequest.delegate = nil;
+        [_httpRequest release];
+        _httpRequest = nil;
+    }
+    [super dealloc];
+}
+
+/**   函数名称 :initRequestWithDelegate:
+ **   函数作用 :TODO:初始化
+ **   函数参数 :delegate 回调对象
+ **   函数返回值:
+ **/
+- (id)initRequestWithDelegate:(id)delegate
+{
+    self = [super init];
+    if (self) {
+        self.delegate = delegate;
+        //初始化数据解析引擎
+        _parserEngine = [DJ_ParserEngine shareInstance];
+    }
+    return self;
+}
+
+/**   函数名称 :requestWithURL:
+ **   函数作用 :TODO:通过URL发出请求
+ **   函数参数 :N/A
+ **   函数返回值:N/A
+ **/
+- (void)requestWithURL:(NSString *)url
+{
+    NSLog(@"%s,%d\n%@",__func__,__LINE__,url);
+    
+    if (_httpRequest) {
+        [_httpRequest cancel];
+        [_httpRequest setDelegate:nil];
+        [_httpRequest release];
+        _httpRequest=nil;
+    }
+    if (url && [url length] > 0) {
+        //初始化网络请求
+        _httpRequest = [[ASIHTTPRequest alloc] initWithURL:[NSURL URLWithString:url]];
+        _httpRequest.delegate = self;
+        [_httpRequest startAsynchronous];
+    }
+}
+
+#pragma mark- =================================Function declaration=======================================================
+/**   函数名称 :systemInitRequest:
+ **   函数作用 :TODO:系统初始化
+ **   函数参数 :N/A
+ **   函数返回值:N/A
+ **/
+- (void)systemInitRequest
+{
+    
+}
+/**   函数名称 :requestIndexAdInfo:
+ **   函数作用 :TODO:请求首页广告信息
+ **   函数参数 :N/A
+ **   函数返回值:N/A
+ **/
+- (void)requestIndexAdInfo
+{
+    [self requestWithURL:[NSString stringWithFormat:INDEX_AD_URL,INDEX_AD_REQCODE]];
+}
+
+/**   函数名称 :requestInfomationWithTime:
+ **   函数作用 :TODO:请求资讯一级分类列表信息
+ **   函数参数 :time 更新时间
+ **   函数返回值:N/A
+ **/
+- (void)requestInfomationWithTime:(NSString *)time
+{
+    [self requestWithURL:[NSString stringWithFormat:INFO_MODEL_URL,INFO_MODE_REQCODE]];
+}
+
+/**   函数名称 :requestInfoSubListWithId:
+ **   函数作用 :TODO:通过某个item的ID获取二级分类
+ **   函数参数 :time 更新时间
+ **   函数返回值:N/A
+ **/
+- (void)requestInfoSubListWithId:(int)commericalId
+{
+    [self requestWithURL:[NSString stringWithFormat:INFO_SUB_MODEL_URL,INFO_SUB_MODE_REQCODE,commericalId]];
+}
+
+/**   函数名称 :requestGoodsCataList:
+ **   函数作用 :TODO:请求商品分类列表
+ **   函数参数 :N/A
+ **   函数返回值:N/A
+ **/
+- (void)requestGoodsCatagoryList
+{
+    [self requestWithURL:[NSString stringWithFormat:INFO_GOODS_CATA_URL,INFO_GOODS_CATA_REQCODE]];
+}
+
+/**   函数名称 :requestParkingNotice:
+ **   函数作用 :TODO:请求停车场公告
+ **   函数参数 :N/A
+ **   函数返回值:N/A
+ **/
+- (void)requestParkingNotice
+{
+    [self requestWithURL:INFO_PARKING_URL];
+}
+
+/**   函数名称 :requestMoreAbout
+ **   函数作用 :TODO:请求更多关于
+ **   函数参数 :N/A
+ **   函数返回值:N/A
+ **/
+- (void)requestMoreAbout
+{
+    [self requestWithURL:MORE_ABOUT_URL];
+}
+
+/**   函数名称 :requestMallMap
+ **   函数作用 :TODO:请求楼层地图信息
+ **   函数参数 :N/A
+ **   函数返回值:N/A
+ **/
+- (void)requestMallMap
+{
+    [self requestWithURL:MALLMAP_GET_URL];
+}
+
+/**   函数名称 :requestStoreInfo
+ **   函数作用 :TODO:请求楼层地图信息
+ **   函数参数 :N/A
+ **   函数返回值:N/A
+ **/
+- (void)requestStoreInfo:(int)storeID
+{
+    [self requestWithURL:[NSString stringWithFormat:STOREINFO_GET_URL,storeID,STOREINFO_GET_REQCODE]];
+}
+
+
+#pragma mark- =================================ASIHTTPRequestDelegate===================================================
+/**   函数名称 :requestFinished:
+ **   函数作用 :TODO:网络请求成功
+ **   函数参数 :request  请求对象
+ **   函数返回值:
+ **/
+- (void)requestFinished:(ASIHTTPRequest *)request
+{
+    NSDictionary *dict = [[request responseString] JSONValue];
+    NSString *reqCode = [dict objectForKey:REQCODE_KEY];
+    
+    if (dict==nil || ![dict isKindOfClass:[NSDictionary class]]) {
+        NSLog(@"responseString:%@",[request responseString]);
+        if(self.delegate && [self.delegate respondsToSelector:@selector(httpRequestError:)]) {
+            [self.delegate httpRequestError:@"数据错误"];
+        }
+        return;
+    }
+    
+    //TODO:解析数据
+    [self parserResponeDataWithDict:dict reqCode:reqCode];
+    
+}
+/**   函数名称 :requestFailed:
+ **   函数作用 :TODO:网络请求失败
+ **   函数参数 :request  请求对象
+ **   函数返回值:
+ **/
+- (void)requestFailed:(ASIHTTPRequest *)request
+{
+    if (self.delegate && [self.delegate respondsToSelector:@selector(httpRequestError:)]) {
+        [self.delegate httpRequestError:REQUEST_ERROR_INFO];
+    }
+}
+
+#pragma mark- ======================================数据解析================================================
+
+/**   函数名称 :parserResponeDataWithDict:reqCode:
+ **   函数作用 :TODO:解析数据
+ **   函数参数 :dict 数据字典  reqCode数据请求码
+ **   函数返回值:N/A
+ **/
+- (void)parserResponeDataWithDict:(NSDictionary *)dict reqCode:(NSString *)reqCode
+{
+    //数据解析
+    if ([reqCode isEqualToString:INDEX_AD_REQCODE]) {
+        /* !!!:首页广告数据解析 */
+        int status=[[dict objectForKey:DATA_STATUS_KEY] intValue];
+        if (status != 1) {
+            if (self.delegate && [self.delegate respondsToSelector:@selector(indexAdInfoRequestFailed)]) {
+                [self.delegate indexAdInfoRequestFailed];
+            }
+        }else{
+            //资讯模块
+            NSMutableArray *infomationArray = [[NSMutableArray alloc] init];
+            [_parserEngine parserIndexAdInfoWithDict:dict outArray:&infomationArray];
+            if (self.delegate && [self.delegate respondsToSelector:@selector(indexAdInfoRequestFinished:)]) {
+                [self.delegate indexAdInfoRequestFinished:infomationArray];
+            }
+            [infomationArray release];
+        }
+    }else if ([reqCode isEqualToString:INFO_MODE_REQCODE]) {
+        /* !!!:资讯一级列表模块数据解析 */
+        int status=[[dict objectForKey:DATA_STATUS_KEY] intValue];
+        if (status != 1) {
+            if (self.delegate && [self.delegate respondsToSelector:@selector(infomationDataRequestFailed)]) {
+                [self.delegate infomationDataRequestFailed];
+            }
+        }else{
+            NSMutableArray *infomationArray = [[NSMutableArray alloc] init];
+            [_parserEngine parserInfomationWithDict:dict outArray:&infomationArray];
+            if (self.delegate && [self.delegate respondsToSelector:@selector(infomationDataRequestFinished:)]) {
+                [self.delegate infomationDataRequestFinished:infomationArray];
+            }
+            [infomationArray release];
+        }
+    }else if([reqCode isEqualToString:INFO_SUB_MODE_REQCODE]){
+        /* !!!:资讯二级列表模块数据解析 */
+        int status=[[dict objectForKey:DATA_STATUS_KEY] intValue];
+        if (status != 1) {
+            if (self.delegate && [self.delegate respondsToSelector:@selector(infomationSubDataRequestFailed)]) {
+                [self.delegate infomationSubDataRequestFailed];
+            }
+        }else{
+            NSMutableArray *infomationArray = [[NSMutableArray alloc] init];
+            
+            [_parserEngine parserInfoSubListWithDict:dict outArray:&infomationArray];
+            if (self.delegate && [self.delegate respondsToSelector:@selector(infomationSubDataRequestFinished:)]) {
+                [self.delegate infomationSubDataRequestFinished:infomationArray];
+            }
+            [infomationArray release];
+        }
+    }else if ([reqCode isEqualToString:INFO_GOODS_CATA_REQCODE]){
+        /* !!!: 商品类别目录*/
+        int status=[[dict objectForKey:DATA_STATUS_KEY] intValue];
+        if (status != 1) {
+            if (self.delegate && [self.delegate respondsToSelector:@selector(goodsCataRequestFailed)]) {
+                [self.delegate goodsCataRequestFailed];
+            }
+        }else{
+//            NSMutableDictionary *resultDict = [[NSMutableDictionary alloc] init];
+//            [_parserEngine parserGoodsCatagoryWith:dict outDict:&resultDict];
+            if (self.delegate && [self.delegate respondsToSelector:@selector(goodsCataRequestFinished:)]) {
+                [self.delegate goodsCataRequestFinished:dict];
+            }
+//            [resultDict release];
+        }
+    }
+    else if ([reqCode isEqualToString:INFO_PARKING_REQCODE]){
+        /* !!!: 停车场公告*/
+        int status=[[dict objectForKey:DATA_STATUS_KEY] intValue];
+        if (status != 1) {
+            if (self.delegate && [self.delegate respondsToSelector:@selector(parkingNoticeRequestFailed)]) {
+                [self.delegate parkingNoticeRequestFailed];
+            }
+        }else{
+            ParkingNoticeNode *node = [[ParkingNoticeNode alloc] init];
+            [_parserEngine parserDetailDict:dict toParkingNoticeNode:&node];
+            if (self.delegate && [self.delegate respondsToSelector:@selector(parkingNoticeRequestFinished:)]) {
+                [self.delegate parkingNoticeRequestFinished:node];
+            }
+            [node release];
+        }
+    }else if ([reqCode isEqualToString:MORE_ABOUT_REQCODE]){
+        /* !!!: 更多关于德基*/
+        int status=[[dict objectForKey:DATA_STATUS_KEY] intValue];
+        if (status != 1) {
+            if (self.delegate && [self.delegate respondsToSelector:@selector(moreAboutNoticeRequestFailed)]) {
+                [self.delegate moreAboutNoticeRequestFailed];
+            }
+        }else{
+            CommercialDetailNode *node = [[CommercialDetailNode alloc] init];
+            [_parserEngine parserDetailDict:dict toCommercialDetailNode:&node];
+            if (self.delegate && [self.delegate respondsToSelector:@selector(moreAboutNoticeRequestFinished:)]) {
+                [self.delegate moreAboutNoticeRequestFinished:node];
+            }
+            [node release];
+        }
+    }else if ([reqCode isEqualToString:MALLMAP_GET_REQCODE]){
+        /* !!!: 获取商城地图信息*/
+        int status=[[dict objectForKey:DATA_STATUS_KEY] intValue];
+        if (status != 1) {
+            if (self.delegate && [self.delegate respondsToSelector:@selector(mallMapInfoGetRequestFailed)]) {
+                [self.delegate mallMapInfoGetRequestFailed];
+            }
+        }else{
+//            MallMapNode *node = [[MallMapNode alloc] init];
+//            [_parserEngine parserDetailDict:dict toMallMapNode:&node];
+            if (self.delegate && [self.delegate respondsToSelector:@selector(mallMapInfoGetRequestFinished:)]) {
+                [self.delegate mallMapInfoGetRequestFinished:dict];
+            }
+//            [node release];
+        }
+    }else if ([reqCode isEqualToString:STOREINFO_GET_REQCODE]){
+        /* !!!: 获取店铺详情信息*/
+        int status=[[dict objectForKey:DATA_STATUS_KEY] intValue];
+        if (status != 1) {
+            if (self.delegate && [self.delegate respondsToSelector:@selector(storeInfoRequestFailed)]) {
+                [self.delegate storeInfoRequestFailed];
+            }
+        }else{
+            GoodsDetailNode *node = [[GoodsDetailNode alloc] init];
+            [_parserEngine parserDetailDict:dict toGoodsDetailNode:&node];
+            if (self.delegate && [self.delegate respondsToSelector:@selector(storeInfoRequestFinished:)]) {
+                [self.delegate storeInfoRequestFinished:node];
+            }
+            [node release];
+        }
+    }
+
+}
+
+@end

@@ -1,0 +1,52 @@
+//
+// Prefix header for all source files of the 'WN' target in the 'WN' project
+//
+
+#import <Availability.h>
+
+#ifndef __IPHONE_4_0
+#warning "This project uses features only available in iOS SDK 4.0 and later."
+#endif
+
+#ifdef __OBJC__
+
+    #import <UIKit/UIKit.h>
+    #import <Foundation/Foundation.h>
+    #import <MHTool/MHTool.h>
+    #import <MHTool/MHNetWorkListenner.h>
+    #import <ASIHTTPRequest/ASIHTTPRequest.h>
+    #import "UIImageView+WebCache.h"
+    #import "SDImageCache.h"
+    #import "JSON.h"
+    #import <MHTool/MHCommonTool.h>
+    #import <MHTool/MHNetWorkListenner.h>
+
+#define LIST_PAGE_COUNT 10
+
+#define WEIXIN_APPID @"wx059530e44401a4b8"
+
+//获取key
+#define GETKEY(key)     [[NSDictionary dictionaryWithContentsOfFile:\
+[[NSBundle mainBundle] pathForResource:@"APIKeys" ofType:@"plist"]]\
+objectForKey:key]
+
+
+//新浪微博通知  bind
+#define SINA_DID_BIND    @"SINA_DID_BIND"
+//新浪微博通知  cancelBind
+#define SINA_DID_CANCELBIND    @"SINA_DID_CANCELBIND"
+//腾讯微博通知  bind
+#define TECENT_DID_BIND  @"TECENT_DID_BIND"
+//腾讯微博通知  cancelBind
+#define TECENT_DID_CANCELBIND  @"TECENT_DID_CANCELBIND"
+
+#define COLLECTION_INFO       @"COLLECTION_INFO"
+
+#define isBindSina    @"isBindSina"
+#define isBindQQ      @"isBindQQ"
+
+#define SHARE_INFO  @"我宁i prefer以手工(handworks)打造品牌世界,从服饰到配件无一不是由人力慢工细活制作而成,一半手感,另一半取材温暖.感受这份亲切，何不进来看看http://t.cn/zjFttUF"
+
+#define SHARE_URL   @"http://t.cn/zjFttUF"
+
+#endif

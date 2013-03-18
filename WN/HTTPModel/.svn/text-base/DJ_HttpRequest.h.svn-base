@@ -1,0 +1,223 @@
+//
+//  DJ_HttpRequest.h
+//  Deji_Plaza
+//
+//  Created by 王尧 on 12-12-28.
+//  Copyright (c) 2012年 王尧. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+#import "DJ_ParserEngine.h"
+
+#pragma mark-======================================DJ_HttpRequestDelegate=====================================
+@protocol DJ_HttpRequestDelegate <NSObject>
+@optional
+
+/**   函数名称 :httpRequestError:
+ **   函数作用 :TODO:服务器请求错误
+ **   函数参数 :errorInfo 错误信息
+ **   函数返回值:
+ **/
+- (void)httpRequestError:(NSString *)errorInfo;
+
+#pragma mark-==========系统初始化协议回调=============
+/**   函数名称 :systemInitDataFinished:
+ **   函数作用 :TODO:系统初始化获取数据成功
+ **   函数参数 :array 数据返回
+ **   函数返回值:
+ **/
+- (void)systemInitDataFinished:(NSArray *)array;
+/**   函数名称 :systemInitDataFailed:
+ **   函数作用 :TODO:系统数据初始化失败
+ **   函数参数 :N/A
+ **   函数返回值:N/A
+ **/
+- (void)systemInitDataFailed;
+
+/**   函数名称 :indexAdInfoRequestFinished:
+ **   函数作用 :TODO:首页广告模块数据获取成功
+ **   函数参数 :array  数据数组
+ **   函数返回值:N/A
+ **/
+- (void)indexAdInfoRequestFinished:(NSMutableArray *)array;
+
+/**   函数名称 :indexAdInfoRequestFailed:
+ **   函数作用 :TODO:首页广告数据获取失败
+ **   函数参数 :array  数据数组
+ **   函数返回值:N/A
+ **/
+- (void)indexAdInfoRequestFailed;
+#pragma mark-=========“资讯”模块数据回调===============
+/**   函数名称 :infomationDataRequestFinished:
+ **   函数作用 :TODO:资讯模块一级列表数据请求成功
+ **   函数参数 :array  数据数组
+ **   函数返回值:N/A
+ **/
+- (void)infomationDataRequestFinished:(NSMutableArray *)array;
+/**   函数名称 :infomationDataRequestFailed:
+ **   函数作用 :TODO:资讯模块一级列表请求失败
+ **   函数参数 :N/A
+ **   函数返回值:N/A
+ **/
+- (void)infomationDataRequestFailed;
+/**   函数名称 :infomationSubDataRequestFinished:
+ **   函数作用 :TODO:资讯模块二级列表请求失败
+ **   函数参数 :N/A
+ **   函数返回值:N/A
+ **/
+- (void)infomationSubDataRequestFinished:(NSMutableArray *)array;
+/**   函数名称 :infomationSubDataRequestFailed:
+ **   函数作用 :TODO:资讯模块二级列表请求失败
+ **   函数参数 :N/A
+ **   函数返回值:N/A
+ **/
+- (void)infomationSubDataRequestFailed;
+
+#pragma mark-=========“导购”模块数据回调===============
+/**   函数名称 :goodsCataRequestFinished:
+ **   函数作用 :TODO:商品类别目录请求结束
+ **   函数参数 :resultDict 返回的数据字典
+ **   函数返回值:
+ **/
+- (void)goodsCataRequestFinished:(NSDictionary *)resultDict;
+/**   函数名称 :goodsCataRequestFailed:
+ **   函数作用 :TODO:商品类别目录请求失败
+ **   函数参数 :N/A
+ **   函数返回值:N/A
+ **/
+- (void)goodsCataRequestFailed;
+/**   函数名称 :mallMapInfoGetRequestFinished:
+ **   函数作用 :TODO:获取商城地图信息请求结束
+ **   函数参数 :MallMapNode 返回的地图信息节点
+ **   函数返回值:
+ **/
+- (void)mallMapInfoGetRequestFinished:(NSDictionary *)mallMapDict;
+/**   函数名称 :mallMapInfoGetRequestFailed:
+ **   函数作用 :TODO:获取商城地图信息请求失败
+ **   函数参数 :N/A
+ **   函数返回值:N/A
+ **/
+- (void)mallMapInfoGetRequestFailed;
+/**   函数名称 :requestStoreInfo
+ **   函数作用 :TODO:请求店铺信息信息
+ **   函数参数 :N/A
+ **   函数返回值:N/A
+ **/
+- (void)storeInfoRequestFinished:(GoodsDetailNode *)goodsDetailNode;
+/**   函数名称 :requestStoreInfo
+ **   函数作用 :TODO:请求店铺信息信息
+ **   函数参数 :N/A
+ **   函数返回值:N/A
+ **/
+- (void)storeInfoRequestFailed;
+
+#pragma mark-=========停车场公告数据回调===============
+/**   函数名称 :parkingNoticeRequestFinished:
+ **   函数作用 :TODO:停车场公告请求结束
+ **   函数参数 :resultDict 返回的数据字典
+ **   函数返回值:
+ **/
+- (void)parkingNoticeRequestFinished:(ParkingNoticeNode *)node;
+/**   函数名称 :parkingNoticeRequestFailed:
+ **   函数作用 :TODO:停车场公告请求失败
+ **   函数参数 :N/A
+ **   函数返回值:N/A
+ **/
+- (void)parkingNoticeRequestFailed;
+
+#pragma mark-=========停车场公告数据回调===============
+/**   函数名称 :moreAboutNoticeRequestFinished:
+ **   函数作用 :TODO:更多关于德基请求结束
+ **   函数参数 :resultDict 返回的数据字典
+ **   函数返回值:
+ **/
+- (void)moreAboutNoticeRequestFinished:(CommercialDetailNode *)node;
+/**   函数名称 :moreAboutNoticeRequestFailed:
+ **   函数作用 :TODO:更多关于德基请求失败
+ **   函数参数 :N/A
+ **   函数返回值:N/A
+ **/
+- (void)moreAboutNoticeRequestFailed;
+
+#pragma mark-=========“停车”模块数据回调===============
+#pragma mark-=========“更多”模块数据回调===============
+
+@end
+#pragma mark-======================================Class declaration=====================================
+@interface DJ_HttpRequest : NSObject<ASIHTTPRequestDelegate>
+{
+    ASIHTTPRequest *_httpRequest;
+    DJ_ParserEngine *_parserEngine;
+}
+
+@property (nonatomic,assign) id delegate;
+
+/**   函数名称 :initRequestWithDelegate:
+ **   函数作用 :TODO:构造函数
+ **   函数参数 :delegate 回调对象
+ **   函数返回值:
+ **/
+- (id)initRequestWithDelegate:(id)delegate;
+
+#pragma mark- =================================Function declaration=======================================================
+/**   函数名称 :systemInitRequest:
+ **   函数作用 :TODO:系统初始化
+ **   函数参数 :N/A
+ **   函数返回值:N/A
+ **/
+- (void)systemInitRequest;
+
+/**   函数名称 :requestIndexAdInfo:
+ **   函数作用 :TODO:请求首页广告信息
+ **   函数参数 :N/A
+ **   函数返回值:N/A
+ **/
+- (void)requestIndexAdInfo;
+
+/**   函数名称 :requestInfomationWithTime:
+ **   函数作用 :TODO:请求资讯信息
+ **   函数参数 :time 更新时间
+ **   函数返回值:N/A
+ **/
+- (void)requestInfomationWithTime:(NSString *)time;
+
+/**   函数名称 :requestInfoSubListWithId:
+ **   函数作用 :TODO:通过某个item的ID获取二级分类
+ **   函数参数 :time 更新时间
+ **   函数返回值:N/A
+ **/
+- (void)requestInfoSubListWithId:(int)commericalId;
+
+/**   函数名称 :requestGoodsCataList:
+ **   函数作用 :TODO:请求商品分类列表
+ **   函数参数 :N/A
+ **   函数返回值:N/A
+ **/
+- (void)requestGoodsCatagoryList;
+/**   函数名称 :requestParkingNotice:
+ **   函数作用 :TODO:请求停车场公告
+ **   函数参数 :N/A
+ **   函数返回值:N/A
+ **/
+- (void)requestParkingNotice;
+
+/**   函数名称 :requestMoreAbout
+ **   函数作用 :TODO:请求更多关于
+ **   函数参数 :N/A
+ **   函数返回值:N/A
+ **/
+- (void)requestMoreAbout;
+/**   函数名称 :requestMallMap
+ **   函数作用 :TODO:请求楼层地图信息
+ **   函数参数 :N/A
+ **   函数返回值:N/A
+ **/
+- (void)requestMallMap;
+
+/**   函数名称 :requestStoreInfo
+ **   函数作用 :TODO:请求楼层地图信息
+ **   函数参数 :N/A
+ **   函数返回值:N/A
+ **/
+- (void)requestStoreInfo:(int)storeID;
+@end
